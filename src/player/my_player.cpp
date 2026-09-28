@@ -59,13 +59,11 @@ Point MyPlayer::make_move(const State &state) {
     const Sign my_sign = (count_x == count_o) ? Sign::X : Sign::O;
     const Sign opp_sign = (my_sign == Sign::X) ? Sign::O : Sign::X;
 
-    // Расширяем зону поиска
     min_x = std::max(0, min_x - 4);
     max_x = std::min(cols - 1, max_x + 4);
     min_y = std::max(0, min_y - 4);
     max_y = std::min(rows - 1, max_y + 4);
 
-    // Радиус соседей = 2 (чтобы видеть дырявые тройки)
     auto has_neighbor = [&](int x, int y) -> bool {
         for (int dy = -2; dy <= 2; ++dy) {
             for (int dx = -2; dx <= 2; ++dx) {
@@ -80,7 +78,6 @@ Point MyPlayer::make_move(const State &state) {
         return false;
     };
 
-    // --- ИДЕАЛЬНАЯ КАЛИБРОВКА СТАТИКИ ---
     auto evaluate_static = [&]() -> long long {
         long long my_score = 0;
         long long opp_score = 0;
@@ -96,10 +93,10 @@ Point MyPlayer::make_move(const State &state) {
             if (my_c > 0 && opp_c > 0) return;
             
             if (my_c > 0) {
-                if (my_c == 5) my_score += 100000000000000LL;      // 100 Триллионов
-                else if (my_c == 4) my_score += 1000000000000LL;   // 1 Триллион
-                else if (my_c == 3) my_score += 50000000LL;        // 50 Миллионов
-                else if (my_c == 2) my_score += 1000000LL;         // 1 Миллион
+                if (my_c == 5) my_score += 100000000000000LL;
+                else if (my_c == 4) my_score += 1000000000000LL;
+                else if (my_c == 3) my_score += 50000000LL;
+                else if (my_c == 2) my_score += 1000000LL;
                 else my_score += 10000LL;
             } else if (opp_c > 0) {
                 if (opp_c == 5) opp_score += 100000000000000LL;
@@ -118,11 +115,9 @@ Point MyPlayer::make_move(const State &state) {
                 if (x <= cols - 5 && y >= 4) eval_window(x, y, 1, -1);       
             }
         }
-        // Защитный множитель x1.5: Очки противника для нас важнее (особенно за O!)
         return my_score - opp_score - (opp_score / 2); 
     };
 
-    // --- ДЕТЕКТОР ТОЧЕК ---
     auto evaluate_point = [&](int cx, int cy, Sign color) -> long long {
         int win5 = 0, win4 = 0, win3 = 0, win2 = 0;
         int dx_list[] = {1, 0, 1, 1};
@@ -156,20 +151,18 @@ Point MyPlayer::make_move(const State &state) {
             }
         }
         
-        if (win5 >= 1) return 100000000000000LL;          // 100Т (Победа)
-        if (win4 >= 2) return 3000000000000LL;            // 3Т (Открытая 4)
-        if (win4 >= 1 && win3 >= 2) return 2000000000000LL; // 2Т (Вилка 4x3)
-        if (win4 >= 1) return 1000000000000LL;            // 1Т (Закрытая 4)
-        if (win3 >= 4) return 500000000000LL;             // 500МЛРД (Вилка 3x3)
-        if (win3 >= 2) return 150000000LL;                // 150М (Открытая 3)
-        if (win3 == 1) return 50000000LL;                 // 50М (Закрытая 3)
+        if (win5 >= 1) return 100000000000000LL;
+        if (win4 >= 2) return 3000000000000LL;
+        if (win4 >= 1 && win3 >= 2) return 2000000000000LL;
+        if (win4 >= 1) return 1000000000000LL;
+        if (win3 >= 4) return 500000000000LL;
+        if (win3 >= 2) return 150000000LL;
+        if (win3 == 1) return 50000000LL;
         if (win2 >= 2) return 3000000LL;                  
         if (win2 == 1) return 1000000LL;                  
         return 10000LL;
     };
 
-    // --- БЕЗУСЛОВНЫЕ РЕФЛЕКСЫ В 1 ХОД ---
-    // 1. Можем выиграть прямо сейчас?
     for (int y = min_y; y <= max_y; ++y) {
         for (int x = min_x; x <= max_x; ++x) {
             if (board[y * cols + x] == Sign::NONE && has_neighbor(x, y)) {
@@ -179,7 +172,6 @@ Point MyPlayer::make_move(const State &state) {
             }
         }
     }
-    // 2. Враг выигрывает следующим ходом? (Жесткий блок без раздумий!)
     for (int y = min_y; y <= max_y; ++y) {
         for (int x = min_x; x <= max_x; ++x) {
             if (board[y * cols + x] == Sign::NONE && has_neighbor(x, y)) {
@@ -190,10 +182,14 @@ Point MyPlayer::make_move(const State &state) {
         }
     }
 
-    struct Candidate { int x; int y; long long score; };
+    struct Candidate { 
+        int x; 
+        int y; 
+        long long score; 
+    };
+    
     const int MAX_CANDIDATES = 20;
 
-    // --- МИНИМАКС ---
     auto minimax = [&](auto& self, int depth, long long alpha, long long beta, bool is_maximizing) -> long long {
         long long current_eval = evaluate_static();
         
@@ -217,7 +213,7 @@ Point MyPlayer::make_move(const State &state) {
                         return is_maximizing ? atk + depth * 1000 : -atk - depth * 1000;
                     }
 
-                    long long urgency = atk + def + (def / 2); // Защита важнее!
+                    long long urgency = atk + def + (def / 2);
                     
                     if (cand_count < MAX_CANDIDATES || urgency > cands[MAX_CANDIDATES - 1].score) {
                         int pos = cand_count < MAX_CANDIDATES ? cand_count++ : MAX_CANDIDATES - 1;
@@ -254,7 +250,6 @@ Point MyPlayer::make_move(const State &state) {
         return best_eval;
     };
 
-    // --- КОРЕНЬ ПОИСКА ---
     Candidate root_cands[MAX_CANDIDATES];
     int root_cand_count = 0;
 
