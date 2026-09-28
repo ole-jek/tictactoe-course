@@ -187,7 +187,7 @@ Point MyPlayer::make_move(const State &state) {
         int y; 
         long long score; 
     };
-    
+
     const int MAX_CANDIDATES = 20;
 
     auto minimax = [&](auto& self, int depth, long long alpha, long long beta, bool is_maximizing) -> long long {
@@ -281,7 +281,7 @@ Point MyPlayer::make_move(const State &state) {
         int cy = root_cands[i].y;
 
         board[cy * cols + cx] = my_sign;
-        long long move_score = minimax(minimax, 2, -200000000000000LL, 200000000000000LL, false);
+        long long move_score = minimax(minimax, 4, -200000000000000LL, 200000000000000LL, false);
         board[cy * cols + cx] = Sign::NONE;
 
         if (move_score > best_score || best_move.x == -1) {

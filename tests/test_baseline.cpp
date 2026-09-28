@@ -26,7 +26,6 @@ int main(int argc, char *argv[]) {
   ttt::game::IPlayer *p2 = ttt::baseline::get_harder_player("p_easy");
 
   ttt::my_player::MyPlayer prand("prand");
-
   ttt::my_player::ConsoleWriter obs;
 
   ttt::game::Game game(opts, &field_initializer);
